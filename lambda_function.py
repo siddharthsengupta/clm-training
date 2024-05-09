@@ -31,7 +31,7 @@ def lambda_handler(event, context):
         raise NameError(f"`{model_name}` is not a valid model name.")
 
     response = client.create_training_job(
-        TrainingJobName=f'test-job-{now}',
+        TrainingJobName=f'clm-training-job-{now}',
         AlgorithmSpecification={
             'TrainingImage': os.getenv('training_image'),
             'TrainingInputMode': 'File',
