@@ -1,0 +1,5 @@
+farm-haystack[inference,faiss,metrics]==1.23.0
+torch==1.13.1
+tensorboard==2.15.2
+sentence-transformers==2.3.1
+sentencepiece==0.1.99
