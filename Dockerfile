@@ -4,10 +4,11 @@ WORKDIR /opt/ml
 
 RUN apt-get update \
   && apt-get upgrade -y \
-  && apt-get install -y --no-install-recommends zip -y \
-  && apt-get install -y --no-install-recommends python3.10 -y \
-  && apt-get install -y --no-install-recommends python3-pip -y \
-  && apt-get install -y --no-install-recommends nvidia-utils-550-server -y \
+  && apt-get install zip -y \
+  && apt-get install unzip -y \
+  && apt-get install python3.10 -y \
+  && apt-get install python3-pip -y \
+  && apt-get install nvidia-utils-550-server -y \
   && apt-get clean
 
 COPY requirements.txt /opt/ml/requirements.txt
