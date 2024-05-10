@@ -8,9 +8,9 @@ python3 $WORKDIR_PATH/dpr_training/train.py \
         --output_dir $WORKDIR_PATH/model/dpr_$1 \
         --query_model_name_or_path $WORKDIR_PATH/input/data/model/dpr_$1/query_encoder \
         --passage_model_name_or_path $WORKDIR_PATH/input/data/model/dpr_$1/passage_encoder \
-        --data_dir $WORKDIR_PATH/input/data/train \
-        --train_file dpr_$1_train.json \
-        --predict_file dpr_$1_test.json \
+        --data_dir $WORKDIR_PATH/input/data \
+        --train_file train/dpr_$1_train.json \
+        --predict_file test/dpr_$1_test.json \
 
 cd $WORKDIR_PATH/model
 pwd
