@@ -1,13 +1,15 @@
-PATH=/opt/ml
+WORKDIR_PATH=/opt/ml
 
-unzip $PATH/input/data/model/debarta_$1 -d $PATH/input/data/model/
+set -e
 
-CUDA_VISIBLE_DEVICES=0,1,2,3 python3 $PATH/debarta_training/train.py \
-        --output_dir $PATH/model/debarta_$1 \
+unzip $WORKDIR_PATH/input/data/model/debarta_$1 -d $WORKDIR_PATH/input/data/model/
+
+CUDA_VISIBLE_DEVICES=0,1,2,3 python3 $WORKDIR_PATH/debarta_training/train.py \
+        --output_dir $WORKDIR_PATH/model/debarta_$1 \
         --model_type debarta \
-        --model_name_or_path $PATH/input/data/model/debarta_$1 \
-        --train_file $PATH/input/data/train/debarta_$1_train.json \
-        --predict_file $PATH/input/data/test/debarta_$1_test.json \
+        --model_name_or_path $WORKDIR_PATH/input/data/model/debarta_$1 \
+        --train_file $WORKDIR_PATH/input/data/train/debarta_$1_train.json \
+        --predict_file $WORKDIR_PATH/input/data/test/debarta_$1_test.json \
         --do_train \
         --do_eval \
         --version_2_with_negative \
@@ -23,9 +25,10 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 python3 $PATH/debarta_training/train.py \
         --gradient_accumulation_steps 4\
         --overwrite_output_dir
 
-cd $PATH/model/debarta_$1
+cd $WORKDIR_PATH/model
 pwd
-zip -r debarta_$1.zip *
+ls -la
+zip -r debarta_$1.zip debarta_$1/*
 
 
 # bash run.sh small 512 256
