@@ -19,6 +19,6 @@ RUN pip install -r requirements.txt
 
 COPY debarta_training/. /opt/ml/debarta_training/
 COPY dpr_training/. /opt/ml/dpr_training/
-COPY lambda_function.py /opt/ml/lambda_function.py
+# COPY lambda_function.py /opt/ml/lambda_function.py
 
 # COPY new.sh /opt/ml/new.sh
