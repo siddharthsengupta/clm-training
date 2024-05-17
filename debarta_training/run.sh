@@ -29,6 +29,7 @@ cd $WORKDIR_PATH/model
 pwd
 ls -la
 zip -r debarta_$1.zip debarta_$1/*
+rm -rf debarta_$1/
 
 
 # bash run.sh small 512 256

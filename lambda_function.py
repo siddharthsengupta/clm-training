@@ -3,8 +3,6 @@ import datetime
 
 import boto3
 
-now = str(datetime.datetime.now()).replace(' ', '-').replace(':', '-').replace('.', '-')
-
 aws_access_key_id = os.getenv('aws_access_key_id')
 aws_default_region = os.getenv('aws_default_region')
 aws_secret_access_key = os.getenv('aws_secret_access_key')
@@ -30,6 +28,7 @@ def lambda_handler(event, context):
     else:
         raise NameError(f"`{model_name}` is not a valid model name.")
 
+    now = str(datetime.datetime.now()).replace(' ', '-').replace(':', '-').replace('.', '-')
     response = client.create_training_job(
         TrainingJobName=f'clm-training-job-{now}',
         AlgorithmSpecification={
@@ -46,7 +45,7 @@ def lambda_handler(event, context):
             'VolumeSizeInGB': 10
         },
         StoppingCondition={
-            'MaxRuntimeInSeconds': 123
+            'MaxRuntimeInSeconds': 3600
         },
         InputDataConfig=[
             {
@@ -86,9 +85,20 @@ def lambda_handler(event, context):
         OutputDataConfig={
             'S3OutputPath': 's3://clm-artifacts/models',
             'CompressionType': 'NONE'
-        }
+        },
+        Tags=[
+            {
+                'Key': 'Name',
+                'Value': 'CLM Model Training'
+            },
+            {
+                'Key': 'Project',
+                'Value': 'CLM'
+            },
+        ]
     )
     return {
         'statusCode': 200,
         'body': response
     }
+## add tags

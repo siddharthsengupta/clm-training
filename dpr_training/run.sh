@@ -2,6 +2,8 @@ WORKDIR_PATH=/opt/ml
 
 set -e
 
+export NCCL_SHM_DISABLE=1
+
 unzip $WORKDIR_PATH/input/data/model/dpr_$1 -d $WORKDIR_PATH/input/data/model/
 
 python3 $WORKDIR_PATH/dpr_training/train.py \
@@ -16,6 +18,7 @@ cd $WORKDIR_PATH/model
 pwd
 ls -la
 zip -r dpr_$1.zip dpr_$1/*
+rm -rf dpr_$1/
 
 
 # bash run.sh small
