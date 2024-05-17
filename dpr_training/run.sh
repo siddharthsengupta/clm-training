@@ -20,5 +20,5 @@ zip -r dpr_$1.zip dpr_$1/*
 rm -rf dpr_$1/
 
 
-# bash run.sh small False
-# bash run.sh long False
+# bash run.sh small false
+# bash run.sh long false

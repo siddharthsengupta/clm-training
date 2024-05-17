@@ -100,8 +100,8 @@ def main():
     )
     parser.add_argument(
         "--use_base_model",
-        default=True,
-        type=bool,
+        default="true",
+        type=str,
         required=True,
         help="Use base model or pretrained model",
     )
@@ -109,15 +109,12 @@ def main():
 
     print("Training")
 
-    if args.use_base_model:
-        query_model = 'facebook/dpr-question_encoder-single-nq-base'
-        passage_model = 'facebook/dpr-ctx_encoder-single-nq-base'
-    else:
-        query_model = args.query_model_name_or_path
-        passage_model = args.passage_model_name_or_path
+    if args.use_base_model == "true":
+        args.query_model_name_or_path = 'facebook/dpr-question_encoder-single-nq-base'
+        args.passage_model_name_or_path = 'facebook/dpr-ctx_encoder-single-nq-base'
 
-    train(query_model=query_model,
-          passage_model=passage_model,
+    train(query_model=args.query_model_name_or_path,
+          passage_model=args.passage_model_name_or_path,
           data_dir=args.data_dir,
           train_file=args.train_file,
           test_file=args.predict_file,

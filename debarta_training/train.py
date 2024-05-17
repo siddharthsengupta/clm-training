@@ -709,9 +709,12 @@ def main():
 
     parser.add_argument("--threads", type=int, default=1, help="multiple threads for converting example to features")
     parser.add_argument("--keep_frac", type=float, default=1.0, help="The fraction of the balanced dataset to keep.")
-    parser.add_argument("--use_base_model", type=bool, default=True, help="Use base model or pretrained model")
+    parser.add_argument("--use_base_model", type=str, default="true", help="Use base model or pretrained model")
     args = parser.parse_args()
 
+    if args.use_base_model == "true":
+        args.model_name_or_path = "microsoft/deberta-v3-large"
+    
     if args.doc_stride >= args.max_seq_length - args.max_query_length:
         logger.warning(
             "WARNING - You've set a doc stride which may be superior to the document length in some "
