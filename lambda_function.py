@@ -86,6 +86,14 @@ def lambda_handler(event, context):
             'S3OutputPath': 's3://clm-artifacts/models',
             'CompressionType': 'NONE'
         },
+        Environment={
+            'n_epochs': os.getenv('n_epochs', '30'),
+            'batch_size': os.getenv('batch_size', '8'),
+            'learning_rate': os.getenv('learning_rate', '1e-5'),
+            'weight_decay': os.getenv('weight_decay', '0.1'),
+            'grad_acc_steps': os.getenv('grad_acc_steps', '4'),
+            'evaluate_every': os.getenv('evaluate_every', '500')
+        },
         Tags=[
             {
                 'Key': 'Name',
