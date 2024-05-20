@@ -39,7 +39,15 @@ def lambda_handler(event, context):
             'grad_acc_steps': os.getenv('dpr_grad_acc_steps', '4'),
             'evaluate_every': os.getenv('dpr_evaluate_every', '500')
         },
-        'debarta': {}
+        'debarta': {
+            'learning_rate': os.getenv('debarta_learning_rate', '1e-5'),
+            'num_train_epochs': os.getenv('debarta_num_train_epochs', '4'),
+            'per_gpu_eval_batch_size': os.getenv('debarta_per_gpu_eval_batch_size', '2'),
+            'per_gpu_train_batch_size': os.getenv('debarta_per_gpu_train_batch_size', '2'),
+            'save_steps': os.getenv('debarta_save_steps', '1000'),
+            'n_best_size': os.getenv('debarta_n_best_size', '20'),
+            'gradient_accumulation_steps': os.getenv('debarta_gradient_accumulation_steps', '4')
+        }
     }
 
     response = trigger_training(current_timestamp, container_entrypoint, model_file_name, train_data_file, test_data_file, environment_vars[model_name])

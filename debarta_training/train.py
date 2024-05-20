@@ -60,13 +60,13 @@ logger = logging.getLogger(__name__)
 MODEL_CONFIG_CLASSES = list(MODEL_FOR_QUESTION_ANSWERING_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
 
-learning_rate = os.getenv('learning_rate')
-num_train_epochs = os.getenv('num_train_epochs')
-per_gpu_eval_batch_size = os.getenv('per_gpu_eval_batch_size')
-per_gpu_train_batch_size = os.getenv('per_gpu_train_batch_size')
-save_steps = os.getenv('save_steps')
-n_best_size = os.getenv('n_best_size')
-gradient_accumulation_steps = os.getenv('gradient_accumulation_steps')
+learning_rate = float(os.getenv('learning_rate'))
+num_train_epochs = int(os.getenv('num_train_epochs'))
+per_gpu_eval_batch_size = int(os.getenv('per_gpu_eval_batch_size'))
+per_gpu_train_batch_size = int(os.getenv('per_gpu_train_batch_size'))
+save_steps = int(os.getenv('save_steps'))
+n_best_size = int(os.getenv('n_best_size'))
+gradient_accumulation_steps = int(os.getenv('gradient_accumulation_steps'))
 
 
 def set_seed(args):
