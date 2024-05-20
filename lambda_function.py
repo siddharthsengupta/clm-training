@@ -50,16 +50,17 @@ def lambda_handler(event, context):
         }
     }
 
-    response = trigger_training(current_timestamp, container_entrypoint, model_file_name, train_data_file, test_data_file, environment_vars[model_name])
+    response = trigger_training(model_name, container_entrypoint, model_file_name, train_data_file, test_data_file, environment_vars[model_name])
     return {
         'statusCode': 200,
         'body': response
     }
 
 
-def trigger_training(current_timestamp, container_entrypoint, model_file_name, train_data_file, test_data_file, environment_vars):
+def trigger_training(container_entrypoint, model_file_name, train_data_file, test_data_file, environment_vars):
+    training_job_name = f"clm-training-job-{model_file_name.replace('.zip', '').replace('_', '-')}-{str(datetime.datetime.now()).replace(' ', '-').replace(':', '-').replace('.', '-')}"
     response = client.create_training_job(
-        TrainingJobName=f'clm-training-job-{current_timestamp}',
+        TrainingJobName=training_job_name,
         AlgorithmSpecification={
             'TrainingImage': os.getenv('training_image'),
             'TrainingInputMode': 'File',
