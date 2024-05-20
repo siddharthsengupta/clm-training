@@ -8,8 +8,8 @@ aws_default_region = os.getenv('aws_default_region')
 aws_secret_access_key = os.getenv('aws_secret_access_key')
 
 client = boto3.client('sagemaker',
-                          aws_access_key_id=aws_access_key_id,
-                          aws_secret_access_key=aws_secret_access_key)
+                      aws_access_key_id=aws_access_key_id,
+                      aws_secret_access_key=aws_secret_access_key)
 
 
 def lambda_handler(event, context):
