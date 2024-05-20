@@ -50,7 +50,7 @@ def lambda_handler(event, context):
         }
     }
 
-    response = trigger_training(model_name, container_entrypoint, model_file_name, train_data_file, test_data_file, environment_vars[model_name])
+    response = trigger_training(container_entrypoint, model_file_name, train_data_file, test_data_file, environment_vars[model_name])
     return {
         'statusCode': 200,
         'body': response
