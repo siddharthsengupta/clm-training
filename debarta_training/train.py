@@ -60,6 +60,14 @@ logger = logging.getLogger(__name__)
 MODEL_CONFIG_CLASSES = list(MODEL_FOR_QUESTION_ANSWERING_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
 
+learning_rate = float(os.getenv('learning_rate'))
+num_train_epochs = int(os.getenv('num_train_epochs'))
+per_gpu_eval_batch_size = int(os.getenv('per_gpu_eval_batch_size'))
+per_gpu_train_batch_size = int(os.getenv('per_gpu_train_batch_size'))
+save_steps = int(os.getenv('save_steps'))
+n_best_size = int(os.getenv('n_best_size'))
+gradient_accumulation_steps = int(os.getenv('gradient_accumulation_steps'))
+
 
 def set_seed(args):
     random.seed(args.seed)
@@ -120,18 +128,19 @@ def train(args, train_dataset, model, tokenizer):
     if args.local_rank in [-1, 0]:
         tb_writer = SummaryWriter()
 
-    args.train_batch_size = args.per_gpu_train_batch_size * max(1, args.n_gpu)
+    args.train_batch_size = per_gpu_train_batch_size * max(1, args.n_gpu)
     if args.keep_frac < 1:
         train_dataset = get_random_subset(train_dataset, keep_frac=args.keep_frac)
 
     train_sampler = RandomSampler(train_dataset) if args.local_rank == -1 else DistributedSampler(train_dataset)
     train_dataloader = DataLoader(train_dataset, sampler=train_sampler, batch_size=args.train_batch_size)
 
+    global num_train_epochs  # required to be global since it is being redefined; else it results in UnboundLocalError
     if args.max_steps > 0:
         t_total = args.max_steps
-        args.num_train_epochs = args.max_steps // (len(train_dataloader) // args.gradient_accumulation_steps) + 1
+        num_train_epochs = args.max_steps // (len(train_dataloader) // gradient_accumulation_steps) + 1
     else:
-        t_total = len(train_dataloader) // args.gradient_accumulation_steps * args.num_train_epochs
+        t_total = len(train_dataloader) // gradient_accumulation_steps * num_train_epochs
 
     # Prepare optimizer and schedule (linear warmup and decay)
     no_decay = ["bias", "LayerNorm.weight"]
@@ -142,7 +151,7 @@ def train(args, train_dataset, model, tokenizer):
         },
         {"params": [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay)], "weight_decay": 0.0},
     ]
-    optimizer = AdamW(optimizer_grouped_parameters, lr=args.learning_rate, eps=args.adam_epsilon)
+    optimizer = AdamW(optimizer_grouped_parameters, lr=learning_rate, eps=args.adam_epsilon)
     scheduler = get_linear_schedule_with_warmup(
         optimizer, num_warmup_steps=args.warmup_steps, num_training_steps=t_total
     )
@@ -176,15 +185,15 @@ def train(args, train_dataset, model, tokenizer):
     # Train!
     logger.info("***** Running training *****")
     logger.info("  Num examples = %d", len(train_dataset))
-    logger.info("  Num Epochs = %d", args.num_train_epochs)
-    logger.info("  Instantaneous batch size per GPU = %d", args.per_gpu_train_batch_size)
+    logger.info("  Num Epochs = %d", num_train_epochs)
+    logger.info("  Instantaneous batch size per GPU = %d", per_gpu_train_batch_size)
     logger.info(
         "  Total train batch size (w. parallel, distributed & accumulation) = %d",
         args.train_batch_size
-        * args.gradient_accumulation_steps
+        * gradient_accumulation_steps
         * (torch.distributed.get_world_size() if args.local_rank != -1 else 1),
     )
-    logger.info("  Gradient Accumulation steps = %d", args.gradient_accumulation_steps)
+    logger.info("  Gradient Accumulation steps = %d", gradient_accumulation_steps)
     logger.info("  Total optimization steps = %d", t_total)
 
     global_step = 1
@@ -196,8 +205,8 @@ def train(args, train_dataset, model, tokenizer):
             # set global_step to gobal_step of last saved checkpoint from model path
             checkpoint_suffix = args.model_name_or_path.split("-")[-1].split("/")[0]
             global_step = int(checkpoint_suffix)
-            epochs_trained = global_step // (len(train_dataloader) // args.gradient_accumulation_steps)
-            steps_trained_in_current_epoch = global_step % (len(train_dataloader) // args.gradient_accumulation_steps)
+            epochs_trained = global_step // (len(train_dataloader) // gradient_accumulation_steps)
+            steps_trained_in_current_epoch = global_step % (len(train_dataloader) // gradient_accumulation_steps)
 
             logger.info("  Continuing training from checkpoint, will skip to saved global_step")
             logger.info("  Continuing training from epoch %d", epochs_trained)
@@ -209,7 +218,7 @@ def train(args, train_dataset, model, tokenizer):
     tr_loss, logging_loss = 0.0, 0.0
     model.zero_grad()
     train_iterator = trange(
-        epochs_trained, int(args.num_train_epochs), desc="Epoch", disable=args.local_rank not in [-1, 0]
+        epochs_trained, int(num_train_epochs), desc="Epoch", disable=args.local_rank not in [-1, 0]
     )
     # Added here for reproductibility
     set_seed(args)
@@ -247,8 +256,8 @@ def train(args, train_dataset, model, tokenizer):
 
             if args.n_gpu > 1:
                 loss = loss.mean()  # mean() to average on multi-gpu parallel (not distributed) training
-            if args.gradient_accumulation_steps > 1:
-                loss = loss / args.gradient_accumulation_steps
+            if gradient_accumulation_steps > 1:
+                loss = loss / gradient_accumulation_steps
 
             if args.fp16:
                 with amp.scale_loss(loss, optimizer) as scaled_loss:
@@ -257,7 +266,7 @@ def train(args, train_dataset, model, tokenizer):
                 loss.backward()
 
             tr_loss += loss.item()
-            if (step + 1) % args.gradient_accumulation_steps == 0:
+            if (step + 1) % gradient_accumulation_steps == 0:
                 if args.fp16:
                     torch.nn.utils.clip_grad_norm_(amp.master_params(optimizer), args.max_grad_norm)
                 else:
@@ -280,7 +289,7 @@ def train(args, train_dataset, model, tokenizer):
                     logging_loss = tr_loss
 
                 # Save model checkpoint
-                if args.local_rank in [-1, 0] and args.save_steps > 0 and global_step % args.save_steps == 0:
+                if args.local_rank in [-1, 0] and save_steps > 0 and global_step % save_steps == 0:
                     output_dir = os.path.join(args.output_dir, "checkpoint-{}".format(global_step))
                     # Take care of distributed/parallel training
                     model_to_save = model.module if hasattr(model, "module") else model
@@ -316,7 +325,7 @@ def evaluate(args, model, tokenizer, prefix=""):
     if not os.path.exists(args.output_dir) and args.local_rank in [-1, 0]:
         os.makedirs(args.output_dir)
 
-    args.eval_batch_size = args.per_gpu_eval_batch_size * max(1, args.n_gpu)
+    args.eval_batch_size = per_gpu_eval_batch_size * max(1, args.n_gpu)
 
     # Note that DistributedSampler samples randomly
     eval_sampler = SequentialSampler(dataset)
@@ -406,7 +415,7 @@ def evaluate(args, model, tokenizer, prefix=""):
             examples,
             features,
             all_results,
-            args.n_best_size,
+            n_best_size,
             args.max_answer_length,
             args.do_lower_case,
             output_prediction_file,
@@ -625,23 +634,23 @@ def main():
         "--do_lower_case", action="store_true", help="Set this flag if you are using an uncased model."
     )
 
-    parser.add_argument("--per_gpu_train_batch_size", default=8, type=int, help="Batch size per GPU/CPU for training.")
-    parser.add_argument(
-        "--per_gpu_eval_batch_size", default=8, type=int, help="Batch size per GPU/CPU for evaluation."
-    )
-    parser.add_argument("--learning_rate", default=5e-5, type=float, help="The initial learning rate for Adam.")
-    parser.add_argument(
-        "--gradient_accumulation_steps",
-        type=int,
-        default=1,
-        help="Number of updates steps to accumulate before performing a backward/update pass.",
-    )
+    # parser.add_argument("--per_gpu_train_batch_size", default=8, type=int, help="Batch size per GPU/CPU for training.")
+    # parser.add_argument(
+    #     "--per_gpu_eval_batch_size", default=8, type=int, help="Batch size per GPU/CPU for evaluation."
+    # )
+    # parser.add_argument("--learning_rate", default=5e-5, type=float, help="The initial learning rate for Adam.")
+    # parser.add_argument(
+    #     "--gradient_accumulation_steps",
+    #     type=int,
+    #     default=1,
+    #     help="Number of updates steps to accumulate before performing a backward/update pass.",
+    # )
     parser.add_argument("--weight_decay", default=0.0, type=float, help="Weight decay if we apply some.")
     parser.add_argument("--adam_epsilon", default=1e-8, type=float, help="Epsilon for Adam optimizer.")
     parser.add_argument("--max_grad_norm", default=1.0, type=float, help="Max gradient norm.")
-    parser.add_argument(
-        "--num_train_epochs", default=1.0, type=float, help="Total number of training epochs to perform."
-    )
+    # parser.add_argument(
+    #     "--num_train_epochs", default=1.0, type=float, help="Total number of training epochs to perform."
+    # )
     parser.add_argument(
         "--max_steps",
         default=-1,
@@ -649,12 +658,12 @@ def main():
         help="If > 0: set total number of training steps to perform. Override num_train_epochs.",
     )
     parser.add_argument("--warmup_steps", default=0, type=int, help="Linear warmup over warmup_steps.")
-    parser.add_argument(
-        "--n_best_size",
-        default=20,
-        type=int,
-        help="The total number of n-best predictions to generate in the nbest_predictions.json output file.",
-    )
+    # parser.add_argument(
+    #     "--n_best_size",
+    #     default=20,
+    #     type=int,
+    #     help="The total number of n-best predictions to generate in the nbest_predictions.json output file.",
+    # )
     parser.add_argument(
         "--max_answer_length",
         default=30,
@@ -676,7 +685,7 @@ def main():
     )
 
     parser.add_argument("--logging_steps", type=int, default=500, help="Log every X updates steps.")
-    parser.add_argument("--save_steps", type=int, default=500, help="Save checkpoint every X updates steps.")
+    # parser.add_argument("--save_steps", type=int, default=500, help="Save checkpoint every X updates steps.")
     parser.add_argument(
         "--eval_all_checkpoints",
         action="store_true",
