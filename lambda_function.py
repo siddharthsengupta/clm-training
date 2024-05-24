@@ -28,8 +28,6 @@ def lambda_handler(event, context):
     else:
         raise NameError(f"`{model_name}` is not a valid model name.")
 
-    current_timestamp = str(datetime.datetime.now()).replace(' ', '-').replace(':', '-').replace('.', '-')
-
     environment_vars = {
         'dpr': {
             'n_epochs': os.getenv('dpr_n_epochs', '30'),
